@@ -63,9 +63,20 @@ pip install git+https://github.com/openai/shap-e.git
 
 GPU required for backbone generation; V100 32 GB is sufficient for the full benchmark.
 
-## Quick start
+## Quick start — single-mesh demo
 
-Minimal example: refine a single mesh.
+```bash
+# Unpack the included baseline meshes first
+tar xzf data/baseline_meshes.tar.gz -C data/
+
+# Refine one mesh in ~5 s on a GPU
+python demo.py --input data/baseline/symmetry/a_symmetric_vase_seed42.obj \
+               --output refined_vase.obj
+```
+
+`demo.py` prints the three baseline rewards, runs 50 Adam steps, and prints the refined values. For a symmetric-vase input you should see all three rewards increase (move toward zero).
+
+### Library usage
 
 ```python
 import torch, trimesh
@@ -125,15 +136,40 @@ The `_plane_protocol.py` helper builds a per-(prompt, seed) plane cache that is 
 | Huber δ | mesh-adaptive (median dihedral at step 0) | Fixed for the run |
 | Plane estimator | 3 PCA + 3 coord + 16 Fibonacci + top-3 refined | Multi-start search |
 
-## Checkpoints
+## Included assets
 
-The optional Lang2Comp MLP (~600 KB) trained on 10K synthetic templates is not shipped in this repo (under 50 MB GitHub limit, but kept separate for clarity). It can be reproduced end-to-end with `src/train_lang2comp.py` in under 2 minutes on CPU.
+| Path | Size | What it is |
+|---|---|---|
+| `checkpoints/lang2comp_v2_lam050.pt` | 88 MB | Trained Lang2Comp MLP used for the paper's **targeted** Lang2Comp rows (per-category diagonal: +98.1% sym, +24.8% HNC, +60.8% com). Load with `Lang2Comp()` in `src/lang2comp.py`. |
+| `checkpoints/lang2comp_best.pt` | 88 MB | Earlier Lang2Comp checkpoint used by `tools/exp_lang2comp_generalization.py` (OOD dominant-property accuracy: 85.6%) and `tools/generate_qualitative_meshes.py`. |
+| `data/plane_cache.json` | 65 KB | Pre-estimated bilateral-symmetry plane for every `(prompt, seed)` pair (330 entries). The multi-start plane estimator has non-deterministic randomness, so **using this cache is required for bit-exact reproduction** of the paper's numerical tables. |
+| `data/baseline_meshes.tar.gz` | 4.2 MB | The 330 Shap-E baseline OBJs (110 prompts × 3 seeds) used across all paper experiments. Unpack with `tar xzf data/baseline_meshes.tar.gz -C data/` to skip Shap-E setup entirely; every refinement experiment reads from `data/baseline/{symmetry,smoothness,compactness}/`. |
+
+Third-party backbone weights (Shap-E / TripoSR / InstantMesh) are **not included** — reviewers who want to regenerate meshes from scratch should download them following those projects' upstream instructions. Everything else in this repo works without those backbones.
+
+Lang2Comp can be retrained end-to-end with `src/train_lang2comp.py` in under 2 minutes on CPU if you want to reproduce the training pipeline.
+
+## Expected results
+
+Running the main benchmark on the provided baseline meshes with the default `lang2comp_v2_lam050.pt` checkpoint should reproduce the following aggregate numbers (prompt-level means over 97 prompts × 3 seeds, same paired protocol as Table 1):
+
+| Method | R_sym improvement | R_HNC improvement | R_compact improvement |
+|---|---|---|---|
+| Baseline (Shap-E) | — | — | — |
+| **DGR (Equal Wt., 0.33/0.33/0.34)** | **+85.8%** | **+19.7%** | **+49.4%** |
+| DGR (Equal Wt., exact 1/3/1/3/1/3) | +91.9% | +19.6% | +49.2% |
+| DGR (PCGrad, 1/3/1/3/1/3) | +92.4% | +18.6% | +52.3% |
+| Sym-Only | +92.8% | −7.4% | −58.9% |
+| HNC-Only | −72.5% | +30.0% | −1.5% |
+| Compact-Only | −100.7% | +1.7% | +67.8% |
+
+If your numbers differ by more than ±0.5 pp, check: (a) you are using `data/plane_cache.json` (not re-running the plane estimator), (b) the Lang2Comp checkpoint is `lang2comp_v2_lam050.pt`, (c) random seeds are {42, 123, 456}.
 
 ## Data
 
 Prompts: `src/prompts_gpteval3d.py` reproduces the 110 GPTEval3D prompts (symmetry / smoothness / compactness categories) used throughout the paper. OOD generalisation prompts for Lang2Comp are embedded in `tools/exp_lang2comp_generalization.py`.
 
-Baseline meshes are regenerated from Shap-E with seeds {42, 123, 456} — the full benchmark takes ~3-4 h on a single V100 (dominated by Shap-E sampling, not refinement).
+Baseline meshes (regenerating them from scratch): run `tools/exp_k_full_mesh_validity.py` — this takes ~3-4 h on a single V100 and requires Shap-E installed. The `data/baseline_meshes.tar.gz` in this repo already contains the exact outputs, so most users will not need to do this.
 
 ## License
 

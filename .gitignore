@@ -29,12 +29,14 @@ results/
 analysis_results/
 ablation_meshes/
 models_cache/
-checkpoints/
 shap_e_model_cache/
 *.pth
 *.ckpt
 *.safetensors
 .cache/
+# Note: checkpoints/ and data/ are intentionally NOT ignored — we ship
+# lang2comp_*.pt weights and plane_cache.json + baseline_meshes.tar.gz
+# so reviewers can reproduce without re-running Shap-E.
 
 # Logs and temp
 *.log
