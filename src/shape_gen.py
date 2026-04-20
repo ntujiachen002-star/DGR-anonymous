@@ -15,10 +15,9 @@ import trimesh
 import numpy as np
 from pathlib import Path
 
-from shap_e.diffusion.sample import sample_latents
-from shap_e.diffusion.gaussian_diffusion import diffusion_from_config
-from shap_e.models.download import load_model, load_config
-from shap_e.util.notebooks import decode_latent_mesh
+# Shap-E is only required for backbone generation (load_shap_e / generate_mesh).
+# The refinement pipeline (refine_with_geo_reward) is Shap-E independent, so we
+# import Shap-E lazily inside the two functions that actually need it.
 
 from geo_reward import (DiffGeoReward, symmetry_reward, symmetry_reward_plane,
                         estimate_symmetry_plane, smoothness_reward, compactness_reward,
@@ -27,6 +26,8 @@ from geo_reward import (DiffGeoReward, symmetry_reward, symmetry_reward_plane,
 
 def load_shap_e(device='cuda:0'):
     """Load Shap-E model components."""
+    from shap_e.diffusion.gaussian_diffusion import diffusion_from_config
+    from shap_e.models.download import load_model, load_config
     xm = load_model('transmitter', device=device)
     model = load_model('text300M', device=device)
     diffusion = diffusion_from_config(load_config('diffusion'))
@@ -38,6 +39,8 @@ def generate_mesh(xm, model, diffusion, prompt, device='cuda:0', batch_size=1, g
 
     Returns list of (vertices, faces, latent) tuples.
     """
+    from shap_e.diffusion.sample import sample_latents
+    from shap_e.util.notebooks import decode_latent_mesh
     latents = sample_latents(
         batch_size=batch_size,
         model=model,
