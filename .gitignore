@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual envs
+venv/
+env/
+.venv/
+.conda/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Artifacts — not checked in, regenerated per run
+results/
+analysis_results/
+ablation_meshes/
+models_cache/
+checkpoints/
+shap_e_model_cache/
+*.pth
+*.ckpt
+*.safetensors
+.cache/
+
+# Logs and temp
+*.log
+*.tar.gz
+*.tmp
+/tmp/
+
+# Paper / report internals (not for public repo)
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
+
+# Secrets — defensive
+.env
+*.secret
+credentials.json

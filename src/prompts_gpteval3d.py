@@ -1,0 +1,137 @@
+"""
+GPTEval3D-style prompts for DiffGeoReward evaluation.
+
+110 prompts organized by dominant geometric property,
+following the GPTEval3D benchmark style (diverse object categories).
+"""
+
+# Symmetry-dominant prompts (37)
+SYMMETRY_PROMPTS = [
+    "a symmetric vase",
+    "a perfectly balanced chair",
+    "a symmetric butterfly sculpture",
+    "an hourglass shape",
+    "a symmetrical temple",
+    "a symmetric wine glass",
+    "a balanced candelabra",
+    "a symmetric trophy",
+    "a mirror-symmetric face mask",
+    "a symmetric cathedral door",
+    "a balanced chess piece, a king",
+    "a symmetric crown",
+    "a balanced scale",
+    "a symmetric flower pot",
+    "a symmetric lamp",
+    "a balanced bookshelf",
+    "a symmetric shield",
+    "a symmetric goblet",
+    "a balanced fountain",
+    "a symmetric arch",
+    "a symmetric chandelier",
+    "a balanced table",
+    "a symmetric pagoda",
+    "a symmetric bell",
+    "a balanced podium",
+    "a symmetric column",
+    "a symmetric urn",
+    "a balanced picture frame",
+    "a symmetric gazebo",
+    "a symmetric obelisk",
+    "a balanced double door",
+    "a symmetric wedding cake",
+    "a balanced coat hanger",
+    "a symmetric window frame",
+    "a balanced dumbbell",
+    "a symmetric anchor",
+    "a symmetric torii gate",
+]
+
+# Smoothness-dominant prompts (37)
+SMOOTHNESS_PROMPTS = [
+    "a smooth organic blob",
+    "a polished sphere",
+    "a smooth river stone",
+    "a smooth dolphin",
+    "a sleek sports car body",
+    "a smooth pebble",
+    "a polished marble egg",
+    "a smooth soap bar",
+    "a streamlined airplane fuselage",
+    "a smooth whale",
+    "a polished gemstone",
+    "a smooth ceramic bowl",
+    "a sleek submarine",
+    "a smooth teardrop shape",
+    "a polished apple",
+    "a smooth cloud shape",
+    "a smooth mushroom cap",
+    "a polished wooden spoon",
+    "a smooth jellyfish bell",
+    "a sleek yacht hull",
+    "a smooth avocado",
+    "a polished brass doorknob",
+    "a smooth seashell",
+    "a smooth banana",
+    "a polished mirror surface",
+    "a smooth melting chocolate drop",
+    "a smooth penguin body",
+    "a polished crystal ball",
+    "a smooth pillow",
+    "a sleek rocket nosecone",
+    "a smooth mango",
+    "a polished guitar body",
+    "a smooth raindrop",
+    "a smooth seal",
+    "a polished pearl",
+    "a smooth bean shape",
+    "a smooth lava lamp blob",
+]
+
+# Compactness-dominant prompts (36)
+COMPACTNESS_PROMPTS = [
+    "a compact cube",
+    "a tight ball",
+    "a dense solid shape",
+    "a minimal round object",
+    "a solid brick",
+    "a compact treasure chest",
+    "a dense rock",
+    "a solid wooden block",
+    "a compact robot",
+    "a dense crystal cluster",
+    "a solid metal die",
+    "a compact barrel",
+    "a dense snowball",
+    "a solid ice cube",
+    "a compact backpack",
+    "a dense cannonball",
+    "a solid sphere",
+    "a compact lantern",
+    "a dense asteroid",
+    "a solid paperweight",
+    "a compact music box",
+    "a dense bowling ball",
+    "a solid gold nugget",
+    "a compact toolbox",
+    "a dense rubber ball",
+    "a solid marble cube",
+    "a compact jack-in-the-box",
+    "a dense iron ingot",
+    "a solid clay pot",
+    "a compact birdhouse",
+    "a dense geode",
+    "a solid wooden sphere",
+    "a compact lunch box",
+    "a dense lead weight",
+    "a solid dice",
+    "a compact jewelry box",
+]
+
+# All prompts with category labels
+ALL_PROMPTS = (
+    [(p, "symmetry") for p in SYMMETRY_PROMPTS] +
+    [(p, "smoothness") for p in SMOOTHNESS_PROMPTS] +
+    [(p, "compactness") for p in COMPACTNESS_PROMPTS]
+)
+
+assert len(ALL_PROMPTS) == 110, f"Expected 110 prompts, got {len(ALL_PROMPTS)}"
