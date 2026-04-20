@@ -100,6 +100,8 @@ refined_V, history = refine_with_geo_reward(
 
 ## Reproducing paper results
 
+For a table-by-table walkthrough (which script produces which number, expected runtime, expected output, sanity check commands), see **[REPRODUCE.md](REPRODUCE.md)**.
+
 Each experiment script is self-contained and writes JSON + OBJ outputs under `results/` and `analysis_results/`.
 
 ```bash
