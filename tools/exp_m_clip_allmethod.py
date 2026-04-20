@@ -132,13 +132,12 @@ def load_image_reward(device):
         import huggingface_hub
         if not hasattr(huggingface_hub, 'cached_download'):
             huggingface_hub.cached_download = huggingface_hub.hf_hub_download
-        # Use HF mirror for China servers + set local cache
         import os
-        os.environ.setdefault('HF_ENDPOINT', 'https://hf-mirror.com')
-        # Try local cache first (autodl-tmp has space, root / may not)
+        # Try local cache first (set HF_HOME to a writable drive if needed).
         import ImageReward as RM
         for cache_dir in [os.path.join(ROOT, "models"),
-                          '/root/.cache/imagereward', '/root/.cache']:
+                          os.path.expanduser("~/.cache/imagereward"),
+                          os.path.expanduser("~/.cache")]:
             local_pt = os.path.join(cache_dir, 'ImageReward.pt')
             if os.path.exists(local_pt):
                 model = RM.load("ImageReward-v1.0", device=device,

@@ -35,8 +35,6 @@ from pathlib import Path
 from scipy import stats
 from collections import defaultdict
 
-# 中国服务器 HuggingFace 镜像
-os.environ.setdefault('HF_ENDPOINT', 'https://hf-mirror.com')
 PROJECT_ROOT = Path(__file__).parent.parent
 os.environ.setdefault('HF_HOME', str(PROJECT_ROOT / 'models_cache'))
 

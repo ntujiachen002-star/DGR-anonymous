@@ -50,8 +50,8 @@ DGR_W  = [1/3, 1/3, 1/3]
 
 # Auto-detect InstantMesh path
 INSTANTMESH_PATH = None
-for _p in ['~/InstantMesh', '~/autodl-tmp/InstantMesh', os.environ.get('INSTANTMESH_PATH', os.path.join(os.path.dirname(ROOT), 'InstantMesh')),
-           '/root/InstantMesh']:
+for _p in [os.environ.get('INSTANTMESH_PATH', os.path.join(os.path.dirname(ROOT), 'InstantMesh')),
+           '~/InstantMesh']:
     _ep = os.path.expanduser(_p)
     if os.path.isdir(_ep):
         INSTANTMESH_PATH = _ep
