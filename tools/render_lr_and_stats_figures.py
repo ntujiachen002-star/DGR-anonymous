@@ -75,8 +75,7 @@ def plot_method_comparison():
     """Bar chart comparing all methods from exp_k full results."""
     # Try multiple possible result paths
     for p in ["analysis_results/clip_allmethod/all_results.json",
-              "analysis_results/mesh_validity_full/all_reports.json",
-              "analysis_results/pilot_geobench_v2/all_results.json"]:
+              "analysis_results/mesh_validity_full/all_reports.json"]:
         if Path(p).exists():
             data = json.load(open(p))
             break
@@ -155,7 +154,7 @@ def plot_method_comparison():
 def plot_degradation_heatmap():
     """Show per-category degradation when using single-reward optimization."""
     for p in ["analysis_results/clip_allmethod/all_results.json",
-              "analysis_results/pilot_geobench_v2/all_results.json"]:
+              "analysis_results/mesh_validity_full/all_reports.json"]:
         if Path(p).exists():
             data = json.load(open(p))
             break
