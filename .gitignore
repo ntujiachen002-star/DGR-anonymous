@@ -41,6 +41,7 @@ shap_e_model_cache/
 # Logs and temp
 *.log
 *.tar.gz
+!data/baseline_meshes.tar.gz
 *.tmp
 /tmp/
 
