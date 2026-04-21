@@ -49,6 +49,8 @@ tools/                 Experiment scripts (one per paper subsection)
     exp_adversarial_triposr.py      50-prompt adversarial stress test on TripoSR+SDXL
     exp_sota_baselines.py           HC Laplacian / ARAP / two-step normal denoising
     exp_trellis_v2.py               TRELLIS-text-large backbone benchmark (180 runs)
+    exp_voxel_symmetry_downstream.py Volumetric V-IoU downstream test (third non-circular signal)
+    analyze_voxel_symmetry.py       Paired t-test / Wilcoxon + LaTeX for V-IoU
   ... (~100 more diagnostic scripts)
 
 requirements.txt       Minimal dependencies (torch, trimesh, scipy, ...)
@@ -191,6 +193,7 @@ If your numbers differ by more than ±0.5 pp, check: (a) you are using `data/pla
 | **Extra classical baselines (`exp_sota_baselines.py`)** | HC Lap $+41/-8/-12$%; ARAP-analog $-4/0/-2$%; Normal-denoise catastrophic. DGR wins all three axes. |
 | **TRELLIS backbone (`exp_trellis_v2.py`)** | $180/180$ valid; $R_\mathrm{sym}$ $+85.1$% ($d=0.74$), $R_\mathrm{smooth}$ $+24.5$%, $R_\mathrm{compact}$ $+64.8$% ($d=1.74$) |
 | **Resolution-stratified (`exp_resolution_robustness.py`)** | Improvements stable across $|V|<30$ to $|V|\geq 1000$; dense subset still $+77/+23/+50$% |
+| **Volumetric V-IoU (`exp_voxel_symmetry_downstream.py`)** | $n=80$ paired symmetry prompts; V-IoU $0.456 \to 0.634$ ($+39$%, $d=+1.55$, $96$% win, $p=8.8\times 10^{-23}$) |
 
 ## Data
 

@@ -377,6 +377,27 @@ PYTHONPATH=src python tools/nips_push/exp_sota_baselines.py
 
 ---
 
+### Volumetric symmetry-IoU downstream validation  (Appendix sec:voxel_symmetry_appendix)
+
+**Claim.** A third non-circular downstream test beyond PSR round-trip and PCA axis stability: volumetric bilateral overlap of the filled voxel occupancy against its own reflection across the bilateral plane. On $n=80$ paired meshes from the 37 symmetry prompts $\times 3$ seeds, V-IoU lifts $0.456 \to 0.634$ (+39.1%, Cohen's $d=+1.55$, $96\%$ win rate, $p=8.8\times 10^{-23}$).
+
+```bash
+# ~10 min on CPU (voxelization + reflection on 111 mesh pairs).
+PYTHONPATH=src python tools/nips_push/exp_voxel_symmetry_downstream.py
+PYTHONPATH=src python tools/nips_push/analyze_voxel_symmetry.py
+```
+
+**Outputs.** `analysis_results/nips_push_voxel_sym/{all_results,summary,per_metric_table.tex}.json`.
+
+**Expected numbers.**
+
+| Metric | Baseline | DGR | Δ% | $p$ | $d$ | Win |
+|---|---|---|---|---|---|---|
+| V-IoU $\uparrow$ | 0.456 | 0.634 | $+39.1$% | $8.8\times 10^{-23}$ | $+1.55$ | $96$% |
+| V-XOR $\downarrow$ | 0.544 | 0.366 | $-32.7$% | $8.8\times 10^{-23}$ | $-1.55$ | $96$% |
+
+---
+
 ### TRELLIS backbone benchmark (modern SOTA)  (Appendix sec:backbone_appendix, TRELLIS row)
 
 **Claim.** DGR transfers to TRELLIS (Xiang et al., CVPR 2025), the strongest open-source text-to-3D generator at submission. On $180/180$ valid runs (60 prompts x 3 seeds, 20 per category), $R_\mathrm{sym}$ improves by $+85.1\%$ ($p=9.9\times 10^{-19}$, $d=0.74$), $R_\mathrm{smooth}$ by $+24.5\%$, $R_\mathrm{compact}$ by $+64.8\%$ ($d=1.74$).
