@@ -259,6 +259,159 @@ python tools/exp_plane_selection_ablation.py
 
 ---
 
+### Resolution-stratified robustness  (Appendix sec:resolution_robustness, Table 4)
+
+**Claim.** DGR improvements are stable across three orders of magnitude of mesh vertex counts ($|V|{<}30$ through $|V|{\geq}1000$), with the dense subset ($n=30$, median $4989$ vertices) still achieving $+77\%$ sym / $+23\%$ HNC / $+50\%$ com.
+
+```bash
+# Requires tools/exp_full_mgda_classical.py to have been run once
+# (produces analysis_results/full_mgda_classical/all_results.json).
+python tools/exp_resolution_robustness.py
+```
+
+**Runtime.** ~30 seconds, CPU only (re-analyses existing per-run outputs).
+
+**Inputs.** `data/baseline/{cat}/*.obj` (for vertex counts) and `analysis_results/full_mgda_classical/all_results.json` (for paired baseline/DGR metrics).
+
+**Outputs.** Stdout table matching Appendix Table 4, and `analysis_results/resolution_robustness/summary.json`.
+
+**Expected numbers.**
+| Bin | $n$ | median $\|V\|$ | Sym % | HNC % | Com % |
+|---|---|---|---|---|---|
+| coarse ($\|V\|<30$) | 79 | 15 | $+64.2$ | $+19.8$ | $+48.4$ |
+| small ($30\le\|V\|<100$) | 79 | 55 | $+84.1$ | $+21.8$ | $+56.1$ |
+| medium ($100\le\|V\|<1000$) | 43 | 141 | $+82.3$ | $+21.5$ | $+42.5$ |
+| dense ($\|V\|\ge 1000$) | 30 | 4989 | $+77.4$ | $+22.6$ | $+49.9$ |
+
+---
+
+## NeurIPS rebuttal-package experiments (`tools/nips_push/`)
+
+The four experiments in this section were added to answer reviewer-facing
+questions about causality, adversarial robustness, additional classical
+baselines, and transfer to a stronger modern backbone. All scripts share
+the existing repo layout and are resumable via per-experiment checkpoints.
+
+### Causal plane-quality $\to$ gradient conflict  (Appendix sec:causal_plane)
+
+**Claim.** Plane angular error causally predicts PCGrad benefit on $R_\mathrm{sym}$ across four plane estimators (Spearman $\rho=+0.20$, $p=1.3\times 10^{-3}$, $n=260$ mesh-plane pairs). This is the causal evidence behind the diagnostic finding that apparent reward conflict in our setting is mainly driven by plane misestimation.
+
+```bash
+# ~6 min on V100 for 100 meshes (34 per category).
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src python tools/nips_push/exp_causal_plane.py \
+    --n-meshes 100
+
+# Analysis + figures (CPU, <1 min):
+PYTHONPATH=src python tools/nips_push/analyze_causal_plane.py
+```
+
+**Outputs.**
+- `analysis_results/nips_push_causal_plane/all_results.json` (per-mesh, per-plane records with 50-step gradient cosines)
+- `analysis_results/nips_push_causal_plane/summary.json` (per-plane means, pooled correlations)
+- `analysis_results/nips_push_causal_plane/fig_plane_vs_pcgrad.{pdf,png}` (scatter of plane error vs PCGrad benefit)
+- `analysis_results/nips_push_causal_plane/fig_plane_vs_cosine.{pdf,png}` (plane error vs % negative cosines)
+- `analysis_results/nips_push_causal_plane/per_method_table.tex` (Table 3 in appendix)
+
+**Expected numbers (per-plane means, $n=65$ valid meshes).**
+
+| Plane        | Ang.\ err (deg) | $R_\mathrm{sym}$ init | PCGrad benefit | \% neg cos(sym,smo) |
+|--------------|---|---|---|---|
+| Fixed xz     | $60.4$ | $-0.108$ | $+0.00091$ | $83.8$ |
+| Best-of-3    | $19.5$ | $-0.062$ | $+0.00056$ | $81.7$ |
+| PCA          | $28.3$ | $-0.076$ | $+0.00073$ | $83.0$ |
+| Multi-start  | $\mathbf{0.0}$ | $\mathbf{-0.040}$ | $+0.00057$ | $\mathbf{80.6}$ |
+
+Verdict printed at end: `SUPPORTED` if $\rho>0$ at $p<0.05$.
+
+---
+
+### Adversarial stress test on TripoSR backbone  (Appendix sec:adversarial_asymmetric, Table)
+
+**Claim.** DGR does not cause measurable semantic drift on 50 adversarial prompts spanning asymmetric, pose-varying, thin-structure, and compositional-handle objects. Under the TripoSR+SDXL-Turbo pipeline, $150/150$ runs produce coherent meshes (vs $22/60$ for Shap-E), with $|\Delta\mathrm{CLIP}|\leq 0.0025$ in every category and shape-CD $4\times$ smaller than the main benchmark.
+
+**Prerequisites.**
+- TripoSR cloned at `$HOME/TripoSR` (or set `TRIPOSR_PATH`)
+- `diffusers`, `rembg`, `openai-clip` installed
+
+```bash
+# ~3h on V100 (150 images + 150 TripoSR + 150 DGR).
+CUDA_VISIBLE_DEVICES=0 TRIPOSR_PATH=$HOME/TripoSR \
+    PYTHONPATH=src python tools/nips_push/exp_adversarial_triposr.py
+```
+
+**Outputs.** `analysis_results/nips_push_adversarial_triposr/{all_results,summary}.json`, plus generated images and meshes under the same dir.
+
+**Expected numbers.**
+
+| Category | $n$ | Sym % | HNC % | Com % | $\Delta$CLIP | shape-CD |
+|---|---|---|---|---|---|---|
+| Asymmetric structural   | $45$  | $+86.1$ | $+36.8$ | $+10.3$ | $-0.0019$ | $0.0148$ |
+| Pose-asymmetric         | $30$  | $+86.5$ | $+36.2$ | $+7.7$  | $-0.0025$ | $0.0149$ |
+| Thin structures         | $45$  | $+81.6$ | $+16.8$ | $+7.2$  | $-0.0015$ | $0.0142$ |
+| Compositional (handles) | $30$  | $+87.5$ | $+45.0$ | $+4.1$  | $-0.0021$ | $0.0147$ |
+| **Overall**             | $150$ | $+85.6$ | $+33.3$ | $+7.8$  | $-0.0019$ | $0.0146$ |
+
+---
+
+### Additional classical-geometry baselines  (Appendix sec:classical_sweep, SOTA table)
+
+**Claim.** Three further classical denoisers beyond Laplacian/Taubin/Humphrey (HC Laplacian bilateral-analog, surface-preserving Laplacian ARAP-analog, two-step normal denoising) all fail to match DGR on any axis. Reinforces the Pareto-separation finding.
+
+**Prerequisites.** `pip install pymeshlab`.
+
+```bash
+# ~45 min on CPU for 236 meshes x 3 methods.
+PYTHONPATH=src python tools/nips_push/exp_sota_baselines.py
+```
+
+**Outputs.** `analysis_results/nips_push_sota_baselines/{all_results,summary}.json`.
+
+**Expected numbers (n=236 meshes).**
+
+| Method | Sym % | HNC % | Com % |
+|---|---|---|---|
+| HC Laplacian (bilateral-like) | $+41.3$ | $-8.1$ | $-11.9$ |
+| Surface-preserving Laplacian (ARAP-analog) | $-3.8$ | $-0.2$ | $-1.7$ |
+| Two-step normal denoising | $-106.9$ | $-16.2$ | $-341.4$ |
+| **\method{} (Equal Wt.)** | $\mathbf{+85.8}$ | $\mathbf{+19.7}$ | $\mathbf{+49.4}$ |
+
+---
+
+### TRELLIS backbone benchmark (modern SOTA)  (Appendix sec:backbone_appendix, TRELLIS row)
+
+**Claim.** DGR transfers to TRELLIS (Xiang et al., CVPR 2025), the strongest open-source text-to-3D generator at submission. On $180/180$ valid runs (60 prompts x 3 seeds, 20 per category), $R_\mathrm{sym}$ improves by $+85.1\%$ ($p=9.9\times 10^{-19}$, $d=0.74$), $R_\mathrm{smooth}$ by $+24.5\%$, $R_\mathrm{compact}$ by $+64.8\%$ ($d=1.74$).
+
+**Prerequisites.**
+- TRELLIS cloned at `$HOME/TRELLIS` (or set `TRELLIS_PATH`)
+- `xformers` installed (`ATTN_BACKEND=xformers` required on pre-Ampere GPUs like V100)
+- Model cache pre-downloaded (`microsoft/TRELLIS-text-large`, ~4 GB)
+
+```bash
+# ~90 min on V100 (25 diffusion steps x 25 slat steps per run, plus DGR refine).
+CUDA_VISIBLE_DEVICES=0 \
+    ATTN_BACKEND=xformers SPCONV_ALGO=native \
+    TRELLIS_PATH=$HOME/TRELLIS \
+    PYTHONPATH=src python -u tools/nips_push/exp_trellis_v2.py
+```
+
+**Outputs.** `analysis_results/nips_push_trellis/{all_results,summary}.json` and cached OBJs in `results/nips_push_trellis_objs/`.
+
+**Expected numbers (n=180 paired runs).**
+
+| Category | $n$ | Sym % | HNC % | Com % |
+|---|---|---|---|---|
+| symmetry    | 60  | $+84.0$ | $+10.5$ | $+61.6$ |
+| smoothness  | 60  | $+84.1$ | $+12.9$ | $+64.7$ |
+| compactness | 60  | $+86.4$ | $+46.1$ | $+67.6$ |
+| **Overall** | $180$ | $\mathbf{+85.1}$ | $\mathbf{+24.5}$ | $\mathbf{+64.8}$ |
+
+**Notes.**
+- TRELLIS raw meshes are 300K--800K vertices; script simplifies to $\leq 10$K faces before DGR (~5K vertices), matching the resolution regime in `sec:resolution_robustness`.
+- On V100 we must set `ATTN_BACKEND=xformers` (default `flash_attn` requires Ampere sm\_80+).
+- The script is resumable: partial `all_results.json` is reloaded on restart, and cached OBJs in `results/nips_push_trellis_objs/` are reused for repeated runs.
+
+---
+
 ## Small-scale alternative (no full benchmark)
 
 If you only want a minimal sanity check (~30 s) rather than the full 4 h run:

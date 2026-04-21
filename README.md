@@ -6,7 +6,7 @@ Training-free inference-time mesh refinement via three differentiable geometric 
 
 ## Overview
 
-Given a text-to-3D baseline mesh (Shap-E / TripoSR / InstantMesh), DiffGeoReward runs 50 steps of Adam on vertex positions to maximise a weighted combination of three closed-form geometric rewards:
+Given a text-to-3D baseline mesh (Shap-E / TripoSR / InstantMesh / TRELLIS), DiffGeoReward runs 50 steps of Adam on vertex positions to maximise a weighted combination of three closed-form geometric rewards:
 
 - **Symmetry** — bilateral Chamfer to reflected mesh across an estimated plane
 - **HNC** — Huberised dihedral-angle consistency across adjacent faces (mesh-adaptive delta)
@@ -42,6 +42,13 @@ tools/                 Experiment scripts (one per paper subsection)
   exp_anticollapse.py             Anti-collapse penalty ablation
   exp_plane_selection_ablation.py Multi-start vs fixed-axis plane
   exp_lang2comp_generalization.py OOD prompts for Lang2Comp
+  exp_resolution_robustness.py    Resolution-stratified analysis (Appendix Table 4)
+  nips_push/                      NeurIPS rebuttal-package experiments (see REPRODUCE.md)
+    exp_causal_plane.py             Causal plane-quality -> PCGrad benefit (Appendix Table 3)
+    analyze_causal_plane.py         Figures + correlations for the causal experiment
+    exp_adversarial_triposr.py      50-prompt adversarial stress test on TripoSR+SDXL
+    exp_sota_baselines.py           HC Laplacian / ARAP / two-step normal denoising
+    exp_trellis_v2.py               TRELLIS-text-large backbone benchmark (180 runs)
   ... (~100 more diagnostic scripts)
 
 requirements.txt       Minimal dependencies (torch, trimesh, scipy, ...)
@@ -122,8 +129,16 @@ python tools/exp_pareto_component_ablation.py
 python tools/exp_psr_selfconsistency.py
 python tools/exp_pca_stability.py
 
-# (6) Cross-backbone — TripoSR / InstantMesh (require those repos on disk)
-TRIPOSR_PATH=/path/to/TripoSR python tools/exp_instantmesh_backbone.py
+# (6) Cross-backbone — TripoSR / InstantMesh / TRELLIS (require those repos on disk)
+TRIPOSR_PATH=$HOME/TripoSR python tools/exp_instantmesh_backbone.py
+ATTN_BACKEND=xformers TRELLIS_PATH=$HOME/TRELLIS \
+    python tools/nips_push/exp_trellis_v2.py
+
+# (7) NeurIPS rebuttal-package experiments (see REPRODUCE.md for expected numbers):
+python tools/nips_push/exp_causal_plane.py    # causal plane-quality study (~6 min)
+python tools/nips_push/analyze_causal_plane.py
+python tools/nips_push/exp_adversarial_triposr.py   # adversarial stress test (~3 h)
+python tools/nips_push/exp_sota_baselines.py        # extra classical baselines (CPU, ~45 min)
 ```
 
 The `_plane_protocol.py` helper builds a per-(prompt, seed) plane cache that is shared across all methods to keep the comparison paired.
@@ -166,6 +181,16 @@ Running the main benchmark on the provided baseline meshes with the default `lan
 | Compact-Only | −100.7% | +1.7% | +67.8% |
 
 If your numbers differ by more than ±0.5 pp, check: (a) you are using `data/plane_cache.json` (not re-running the plane estimator), (b) the Lang2Comp checkpoint is `lang2comp_v2_lam050.pt`, (c) random seeds are {42, 123, 456}.
+
+### NeurIPS rebuttal-package results (from `tools/nips_push/`, see REPRODUCE.md for the full tables)
+
+| Experiment | Key number |
+|---|---|
+| **Causal plane-quality (`exp_causal_plane.py`)** | Spearman $\rho=+0.20$, $p=1.3\times 10^{-3}$ across $n=260$ mesh-plane pairs — worse plane $\to$ larger PCGrad benefit on $R_\mathrm{sym}$ |
+| **Adversarial TripoSR (`exp_adversarial_triposr.py`)** | $150/150$ valid runs; $\Delta$CLIP $=-0.002$ overall; shape-CD $\approx 0.015$ (4$\times$ smaller than main benchmark) |
+| **Extra classical baselines (`exp_sota_baselines.py`)** | HC Lap $+41/-8/-12$%; ARAP-analog $-4/0/-2$%; Normal-denoise catastrophic. DGR wins all three axes. |
+| **TRELLIS backbone (`exp_trellis_v2.py`)** | $180/180$ valid; $R_\mathrm{sym}$ $+85.1$% ($d=0.74$), $R_\mathrm{smooth}$ $+24.5$%, $R_\mathrm{compact}$ $+64.8$% ($d=1.74$) |
+| **Resolution-stratified (`exp_resolution_robustness.py`)** | Improvements stable across $|V|<30$ to $|V|\geq 1000$; dense subset still $+77/+23/+50$% |
 
 ## Data
 
