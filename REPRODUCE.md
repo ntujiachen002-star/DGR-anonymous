@@ -379,22 +379,66 @@ PYTHONPATH=src python tools/nips_push/exp_sota_baselines.py
 
 ### Volumetric symmetry-IoU downstream validation  (Appendix sec:voxel_symmetry_appendix)
 
-**Claim.** A third non-circular downstream test beyond PSR round-trip and PCA axis stability: volumetric bilateral overlap of the filled voxel occupancy against its own reflection across the bilateral plane. On $n=80$ paired meshes from the 37 symmetry prompts $\times 3$ seeds, V-IoU lifts $0.456 \to 0.634$ (+39.1%, Cohen's $d=+1.55$, $96\%$ win rate, $p=8.8\times 10^{-23}$).
+**Claim.** A third non-circular downstream test beyond PSR round-trip and PCA axis stability: volumetric bilateral overlap of the filled voxel occupancy against its own reflection across the bilateral plane.
+
+Three configurations are shipped:
+- `exp_voxel_symmetry_downstream.py` — the 37 symmetry-prompt core test (Appendix Table).
+- `exp_voxel_symmetry_all_cats.py` — extension to all three categories (110 prompts).
+- `exp_voxel_symmetry_trellis.py` — cross-backbone V-IoU on TRELLIS output.
 
 ```bash
-# ~10 min on CPU (voxelization + reflection on 111 mesh pairs).
-PYTHONPATH=src python tools/nips_push/exp_voxel_symmetry_downstream.py
+# All three are CPU-fast except the TRELLIS one (GPU for DGR refinement).
+PYTHONPATH=src python tools/nips_push/exp_voxel_symmetry_downstream.py    # ~10 min
 PYTHONPATH=src python tools/nips_push/analyze_voxel_symmetry.py
+
+PYTHONPATH=src python tools/nips_push/exp_voxel_symmetry_all_cats.py      # ~30 min
+PYTHONPATH=src python tools/nips_push/analyze_voxel_symmetry_all.py
+
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src python tools/nips_push/exp_voxel_symmetry_trellis.py  # ~60 min GPU
 ```
 
-**Outputs.** `analysis_results/nips_push_voxel_sym/{all_results,summary,per_metric_table.tex}.json`.
-
-**Expected numbers.**
+**Expected numbers (symmetry-prompt core, $n=80$).**
 
 | Metric | Baseline | DGR | Δ% | $p$ | $d$ | Win |
 |---|---|---|---|---|---|---|
 | V-IoU $\uparrow$ | 0.456 | 0.634 | $+39.1$% | $8.8\times 10^{-23}$ | $+1.55$ | $96$% |
 | V-XOR $\downarrow$ | 0.544 | 0.366 | $-32.7$% | $8.8\times 10^{-23}$ | $-1.55$ | $96$% |
+
+**Expected numbers (all 3 categories, $n=182$).**
+
+| Category | $n$ | Baseline | DGR | Δ% | $d$ | Win |
+|---|---|---|---|---|---|---|
+| Symmetry    | $80$  | $0.456$ | $0.634$ | $+39.1$% | $+1.55$ | $96$% |
+| Smoothness  | $33$  | $0.468$ | $0.654$ | $+39.8$% | $+1.88$ | $97$% |
+| Compactness | $69$  | $0.498$ | $0.661$ | $+32.7$% | $+1.90$ | $99$% |
+| **Overall** | $182$ | $0.474$ | $0.648$ | $+36.7$% | $+1.71$ | $97$% |
+
+**Expected numbers (TRELLIS cross-backbone, $n=180$).**
+
+| Category | $n$ | Baseline | DGR | Δ% |
+|---|---|---|---|---|
+| Symmetry    | $60$ | $0.686$ | $0.758$ | $+10.5$% |
+| Smoothness  | $60$ | $0.793$ | $0.831$ | $+4.8$% |
+| Compactness | $60$ | $0.662$ | $0.807$ | $+21.9$% |
+| **Overall** | $180$ | $0.714$ | $0.799$ | $+11.9$% |
+
+The effect transfers to TRELLIS at smaller magnitude ($+11.9\%$ vs $+36.7\%$) because TRELLIS baselines already have higher V-IoU ($0.714$ vs $0.474$); less asymmetry to remove.
+
+---
+
+### Larger causal plane-quality experiment ($n=200$ meshes)  (Appendix sec:causal_plane, updated)
+
+**Claim.** Doubles the statistical power of the causal plane study. Across $n=528$ mesh-plane pairs (132 meshes $\times$ 4 planes), plane angular error Spearman-correlates with PCGrad benefit at $\rho=+0.247$ ($p=8.6\times 10^{-9}$), up from $\rho=+0.20$ at $n=260$.
+
+```bash
+# ~8 min on V100 (132 meshes x 4 planes x 2 optimizers x 50 steps).
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src python tools/nips_push/exp_causal_plane.py \
+    --n-meshes 200 --out-dir analysis_results/nips_push_causal_plane_200
+PYTHONPATH=src python tools/nips_push/analyze_causal_plane_200.py
+```
+
+**Expected output line:**
+`rho=+0.247, p=8.562e-09  [SUPPORTED]`
 
 ---
 
