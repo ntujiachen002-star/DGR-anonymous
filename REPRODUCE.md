@@ -294,12 +294,12 @@ the existing repo layout and are resumable via per-experiment checkpoints.
 
 ### Causal plane-quality $\to$ gradient conflict  (Appendix sec:causal_plane)
 
-**Claim.** Plane angular error causally predicts PCGrad benefit on $R_\mathrm{sym}$ across four plane estimators (Spearman $\rho=+0.20$, $p=1.3\times 10^{-3}$, $n=260$ mesh-plane pairs). This is the causal evidence behind the diagnostic finding that apparent reward conflict in our setting is mainly driven by plane misestimation.
+**Claim.** Plane angular error significantly predicts PCGrad benefit on $R_\mathrm{sym}$ across four plane estimators (Spearman $\rho=+0.25$, $p=8.6\times 10^{-9}$, $n=528$ mesh-plane pairs from $132$ meshes $\times$ $4$ estimators). This is the first of two causal tests; the second (controlled perturbation; see below) holds every non-angle factor constant within each mesh.
 
 ```bash
-# ~6 min on V100 for 100 meshes (34 per category).
+# ~8 min on V100 (132 valid meshes x 4 planes x 2 optimizers x 50 steps).
 CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src python tools/nips_push/exp_causal_plane.py \
-    --n-meshes 100
+    --n-meshes 200
 
 # Analysis + figures (CPU, <1 min):
 PYTHONPATH=src python tools/nips_push/analyze_causal_plane.py
@@ -312,16 +312,16 @@ PYTHONPATH=src python tools/nips_push/analyze_causal_plane.py
 - `analysis_results/nips_push_causal_plane/fig_plane_vs_cosine.{pdf,png}` (plane error vs % negative cosines)
 - `analysis_results/nips_push_causal_plane/per_method_table.tex` (Table 3 in appendix)
 
-**Expected numbers (per-plane means, $n=65$ valid meshes).**
+**Expected numbers (per-plane aggregate means, $n=132$ valid meshes).**
 
 | Plane        | Ang.\ err (deg) | $R_\mathrm{sym}$ init | PCGrad benefit | \% neg cos(sym,smo) |
 |--------------|---|---|---|---|
-| Fixed xz     | $60.4$ | $-0.108$ | $+0.00091$ | $83.8$ |
-| Best-of-3    | $19.5$ | $-0.062$ | $+0.00056$ | $81.7$ |
-| PCA          | $28.3$ | $-0.076$ | $+0.00073$ | $83.0$ |
-| Multi-start  | $\mathbf{0.0}$ | $\mathbf{-0.040}$ | $+0.00057$ | $\mathbf{80.6}$ |
+| Fixed xz     | $57.0$ | $-0.122$ | $+0.00009$ | $80.4$ |
+| Best-of-3    | $20.5$ | $-0.071$ | $+0.00003$ | $79.9$ |
+| PCA          | $29.8$ | $-0.079$ | $+0.00086$ | $81.5$ |
+| Multi-start  | $\mathbf{0.0}$ | $\mathbf{-0.041}$ | $+0.00035$ | $\mathbf{79.7}$ |
 
-Verdict printed at end: `SUPPORTED` if $\rho>0$ at $p<0.05$.
+Note: per-plane aggregates are not expected to be monotonic in angular error (e.g.\ PCA has the largest mean benefit despite intermediate error) because estimators induce mesh-conditioned error distributions; the causal estimand is the paired within-mesh correlation reported above. Verdict printed at end: `SUPPORTED` if $\rho>0$ at $p<0.05$.
 
 ---
 
@@ -426,19 +426,40 @@ The effect transfers to TRELLIS at smaller magnitude ($+11.9\%$ vs $+36.7\%$) be
 
 ---
 
-### Larger causal plane-quality experiment ($n=200$ meshes)  (Appendix sec:causal_plane, updated)
+### Controlled plane-perturbation causal experiment  (Appendix sec:causal_plane, perturbation subsection)
 
-**Claim.** Doubles the statistical power of the causal plane study. Across $n=528$ mesh-plane pairs (132 meshes $\times$ 4 planes), plane angular error Spearman-correlates with PCGrad benefit at $\rho=+0.247$ ($p=8.6\times 10^{-9}$), up from $\rho=+0.20$ at $n=260$.
+**Claim.** The 4-estimator test above compares planes that differ in more than angular error (coordinate-axis bias, PCA structure dependence, discrete vs.\ continuous search). This experiment isolates angular error by rotating each mesh's multi-start plane $\mathbf{n}^\star$ by known angles $\theta \in \{0, 5, 10, 20, 45, 90\}^\circ$ around random perpendicular axes (Rodrigues' formula, offset $d^\star$ kept). Everything except the angle is held constant within each mesh. On $n{=}65$ valid meshes and $n_\text{obs}{=}715$ observations:
+
+- **Per-mesh Kendall $\tau$ (paired within-mesh estimand):** median $\tau={+}0.30$, $81\%$ of meshes ($53/65$) have $\tau>0$, Wilcoxon one-sided $p=2.4\times 10^{-7}$.
+- **Pooled Spearman (replication):** $\rho(\theta, \text{PCGrad benefit on }R_\text{sym}^\text{own}) = {+}0.24$, $p=6.6\times 10^{-11}$, consistent with the 4-estimator $\rho=0.25$.
+- **Per-angle monotonicity:** mean PCGrad benefit grows from $+5.7{\times}10^{-4}$ at $\theta{=}0^\circ$ to $+6.2{\times}10^{-3}$ at $\theta{=}45^\circ$ (${\sim}11{\times}$) and $+8.8{\times}10^{-3}$ at $\theta{=}90^\circ$ (${\sim}15{\times}$).
 
 ```bash
-# ~8 min on V100 (132 meshes x 4 planes x 2 optimizers x 50 steps).
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src python tools/nips_push/exp_causal_plane.py \
-    --n-meshes 200 --out-dir analysis_results/nips_push_causal_plane_200
-PYTHONPATH=src python tools/nips_push/analyze_causal_plane_200.py
+# ~10 min on V100 (99 meshes x 11 perturbations x 2 optimizers x 50 steps = 2178 optim runs).
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src python tools/nips_push/exp_causal_plane_perturbation.py \
+    --n-meshes 100 --angles 0 5 10 20 45 90 --n-dirs 2
+
+# Analysis + figures + mixed-effects regression (CPU, <1 min):
+PYTHONPATH=src python tools/nips_push/analyze_causal_plane_perturbation.py
 ```
 
-**Expected output line:**
-`rho=+0.247, p=8.562e-09  [SUPPORTED]`
+**Outputs.**
+- `analysis_results/nips_push_causal_plane_perturbation/all_results.json`
+- `analysis_results/nips_push_causal_plane_perturbation/summary.json` (per-angle means, pooled + per-mesh correlations, mixed-effects)
+- `analysis_results/nips_push_causal_plane_perturbation/fig_angle_vs_pcgrad_benefit.{pdf,png}` (symlog scatter + boxplot)
+- `analysis_results/nips_push_causal_plane_perturbation/fig_angle_vs_cosine.{pdf,png}` (angle vs \% negative cosines)
+- `analysis_results/nips_push_causal_plane_perturbation/per_angle_table.tex` (Appendix table)
+- `analysis_results/nips_push_causal_plane_perturbation/mixed_effects_report.txt`
+
+**Expected output lines (at end of analysis):**
+```
+[1] Pooled Spearman(angle, PCGrad_benefit_own) > 0, p<0.05
+    rho=+0.241, p=6.628e-11  [SUPPORTED]
+[2] Per-mesh Kendall tau: median > 0, Wilcoxon p<0.05
+    median_tau=+0.299, Wilcoxon p=2.421e-07  [SUPPORTED]
+```
+
+Because coordinate-axis bias, PCA eigenstructure, and multi-start search depth are all eliminated as confounds (every non-angle factor is held constant within each mesh), the within-mesh Kendall $\tau$ admits a narrower causal reading than the 4-estimator test. The effect remains moderate in absolute magnitude (median benefit ${<}1\%$ of baseline $R_\text{sym}$), consistent with the paper's claim that plane misestimation is a substantial fraction (not sole cause) of apparent inter-reward conflict.
 
 ---
 

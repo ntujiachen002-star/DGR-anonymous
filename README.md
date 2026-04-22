@@ -44,8 +44,10 @@ tools/                 Experiment scripts (one per paper subsection)
   exp_lang2comp_generalization.py OOD prompts for Lang2Comp
   exp_resolution_robustness.py    Resolution-stratified analysis (Appendix Table 4)
   nips_push/                      NeurIPS rebuttal-package experiments (see REPRODUCE.md)
-    exp_causal_plane.py             Causal plane-quality -> PCGrad benefit (Appendix Table 3)
-    analyze_causal_plane.py         Figures + correlations for the causal experiment
+    exp_causal_plane.py             4-estimator causal test: plane quality -> PCGrad benefit
+    analyze_causal_plane.py         Figures + correlations for the 4-estimator experiment
+    exp_causal_plane_perturbation.py  Controlled plane-perturbation causal experiment (Rodrigues rotation, isolates angle from estimator confounds)
+    analyze_causal_plane_perturbation.py  Pooled Spearman + per-mesh Kendall tau + mixed-effects regression
     exp_adversarial_triposr.py      50-prompt adversarial stress test on TripoSR+SDXL
     exp_sota_baselines.py           HC Laplacian / ARAP / two-step normal denoising
     exp_trellis_v2.py               TRELLIS-text-large backbone benchmark (180 runs)
@@ -137,8 +139,11 @@ ATTN_BACKEND=xformers TRELLIS_PATH=$HOME/TRELLIS \
     python tools/nips_push/exp_trellis_v2.py
 
 # (7) NeurIPS rebuttal-package experiments (see REPRODUCE.md for expected numbers):
-python tools/nips_push/exp_causal_plane.py    # causal plane-quality study (~6 min)
+python tools/nips_push/exp_causal_plane.py    # 4-estimator causal test (~8 min, n=528 mesh-plane pairs)
 python tools/nips_push/analyze_causal_plane.py
+python tools/nips_push/exp_causal_plane_perturbation.py \
+    --n-meshes 100 --angles 0 5 10 20 45 90 --n-dirs 2   # controlled perturbation (~10 min, n=715 obs)
+python tools/nips_push/analyze_causal_plane_perturbation.py
 python tools/nips_push/exp_adversarial_triposr.py   # adversarial stress test (~3 h)
 python tools/nips_push/exp_sota_baselines.py        # extra classical baselines (CPU, ~45 min)
 ```
@@ -188,7 +193,8 @@ If your numbers differ by more than ±0.5 pp, check: (a) you are using `data/pla
 
 | Experiment | Key number |
 |---|---|
-| **Causal plane-quality (`exp_causal_plane.py`)** | Spearman $\rho=+0.20$, $p=1.3\times 10^{-3}$ across $n=260$ mesh-plane pairs — worse plane $\to$ larger PCGrad benefit on $R_\mathrm{sym}$ |
+| **Causal plane-quality, 4 estimators (`exp_causal_plane.py`)** | Spearman $\rho=+0.25$, $p=8.6\times 10^{-9}$ across $n=528$ mesh-plane pairs ($132$ meshes $\times$ $4$ plane estimators) — worse plane $\to$ larger PCGrad benefit on $R_\mathrm{sym}$ |
+| **Causal plane-perturbation, controlled (`exp_causal_plane_perturbation.py`)** | Per-mesh Kendall $\tau$ median ${+}0.30$, $81\%$ of meshes ($53/65$) positive, Wilcoxon $p=2.4\times 10^{-7}$; pooled Spearman $\rho{=}{+}0.24$ across $n_\text{obs}{=}715$ — **Rodrigues rotation isolates angular error from estimator-specific confounds** |
 | **Adversarial TripoSR (`exp_adversarial_triposr.py`)** | $150/150$ valid runs; $\Delta$CLIP $=-0.002$ overall; shape-CD $\approx 0.015$ (4$\times$ smaller than main benchmark) |
 | **Extra classical baselines (`exp_sota_baselines.py`)** | HC Lap $+41/-8/-12$%; ARAP-analog $-4/0/-2$%; Normal-denoise catastrophic. DGR wins all three axes. |
 | **TRELLIS backbone (`exp_trellis_v2.py`)** | $180/180$ valid; $R_\mathrm{sym}$ $+85.1$% ($d=0.74$), $R_\mathrm{smooth}$ $+24.5$%, $R_\mathrm{compact}$ $+64.8$% ($d=1.74$) |
