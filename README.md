@@ -51,9 +51,9 @@ tools/                 Experiment scripts (one per paper subsection)
     exp_adversarial_triposr.py      50-prompt adversarial stress test on TripoSR+SDXL
     exp_sota_baselines.py           HC Laplacian / ARAP / two-step normal denoising
     exp_trellis_v2.py               TRELLIS-text-large backbone benchmark (180 runs)
-    exp_voxel_symmetry_downstream.py Volumetric V-IoU downstream test (third non-circular signal)
+    exp_voxel_symmetry_downstream.py Volumetric V-IoU downstream test (third geometry-level non-circular signal)
     analyze_voxel_symmetry.py       Paired t-test / Wilcoxon + LaTeX for V-IoU
-    exp_rignet_downstream.py        Application-level downstream: run pretrained RigNet on baseline vs DGR meshes, compute skeleton-level metrics (JSE / angular / root offset / coverage)
+    exp_rignet_downstream.py        Application-level downstream: run pretrained RigNet on baseline vs DGR meshes, compute skeleton-level metrics (JSE / angular / root offset / coverage) — fourth non-circular signal, first at application level
     analyze_rignet.py               Paired stats + per-category breakdown + LaTeX for RigNet
   ... (~100 more diagnostic scripts)
 
@@ -70,8 +70,13 @@ pip install -r requirements.txt
 # For Shap-E backbone (main benchmark):
 pip install git+https://github.com/openai/shap-e.git
 
-# For TripoSR / InstantMesh backbones (cross-backbone only):
-#   see upstream repos; expect models cached under $TRIPOSR_PATH / $INSTANTMESH_PATH
+# For TripoSR / InstantMesh / TRELLIS backbones (cross-backbone only):
+#   see upstream repos; expect models cached under $TRIPOSR_PATH / $INSTANTMESH_PATH / $TRELLIS_PATH
+#   (TRELLIS additionally needs xformers installed: ATTN_BACKEND=xformers)
+
+# For RigNet skeletal-rigging downstream test (optional, see REPRODUCE.md for full deps):
+#   git clone https://github.com/zhan-xu/RigNet $HOME/RigNet  # + pretrained checkpoints/
+#   pip install torch-geometric rtree  # plus libspatialindex-dev libglu1-mesa libxmu6 xvfb
 ```
 
 GPU required for backbone generation; V100 32 GB is sufficient for the full benchmark.
@@ -179,7 +184,7 @@ The `_plane_protocol.py` helper builds a per-(prompt, seed) plane cache that is 
 | `data/plane_cache.json` | 65 KB | Pre-estimated bilateral-symmetry plane for every `(prompt, seed)` pair (330 entries). The multi-start plane estimator has non-deterministic randomness, so **using this cache is required for bit-exact reproduction** of the paper's numerical tables. |
 | `data/baseline_meshes.tar.gz` | 4.2 MB | The 330 Shap-E baseline OBJs (110 prompts × 3 seeds) used across all paper experiments. Unpack with `tar xzf data/baseline_meshes.tar.gz -C data/` to skip Shap-E setup entirely; every refinement experiment reads from `data/baseline/{symmetry,smoothness,compactness}/`. |
 
-Third-party backbone weights (Shap-E / TripoSR / InstantMesh) are **not included** — reviewers who want to regenerate meshes from scratch should download them following those projects' upstream instructions. Everything else in this repo works without those backbones.
+Third-party backbone weights (Shap-E / TripoSR / InstantMesh / TRELLIS) and the RigNet pretrained checkpoints are **not included** — reviewers who want to regenerate meshes from scratch or run the application-level rigging test should download them following those projects' upstream instructions. Everything else in this repo works from the bundled baseline OBJs without those backbones.
 
 Lang2Comp can be retrained end-to-end with `src/train_lang2comp.py` in under 2 minutes on CPU if you want to reproduce the training pipeline.
 
