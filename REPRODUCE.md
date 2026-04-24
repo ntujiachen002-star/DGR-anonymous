@@ -426,6 +426,61 @@ The effect transfers to TRELLIS at smaller magnitude ($+11.9\%$ vs $+36.7\%$) be
 
 ---
 
+### RigNet skeletal-rigging downstream validation  (Appendix sec:rignet_appendix)
+
+**Claim.** First application-level (not just geometric-proxy) downstream test: we run the pretrained RigNet~(Xu et al.\ SIGGRAPH 2020) on baseline and DGR-refined meshes and measure four skeleton-level outcomes. All four are structurally independent of the three optimized rewards (RigNet predicts joint positions through GNN-over-voxels; rewards operate on vertex positions/normals).
+
+**Metrics.**
+- **JSE** (Joint Symmetry Error): mean nearest-mirror distance among predicted joints under the shared multi-start bilateral plane, normalized by bbox diagonal.
+- **Angular deviation**: mean of $\min(\theta, \pi/2-\theta)$ with $\theta$ the angle between each predicted bone and the plane normal.
+- **Root-joint plane offset**: predicted root joint's distance to the plane, normalized by bbox diagonal.
+- **Coverage rate**: fraction of meshes where RigNet returns a skeleton with $\geq 2$ joints.
+
+**Prerequisites.** Clone `zhan-xu/RigNet` and download its pretrained `checkpoints/` folder (5 subdirectories: `bonenet`, `gcn_meanshift`, `pretrain_jointnet`, `pretrain_masknet`, `rootnet`, `skinnet`). Install: `pip install torch_geometric rtree`, plus system packages `libspatialindex-dev libxmu6 libglu1-mesa libgl1-mesa-dri` and `xvfb` for headless rendering. The script auto-patches a few upstream quirks (numpy deprecation, `PointConv`→`PointNetConv` rename, a variable-name typo in `create_single_data`, and disables the Open3D visualization call that hangs under `xvfb`); these patches are applied idempotently via `rignet_runner_patch.py`.
+
+```bash
+# ~1 h on V100, 111 (prompt, seed) pairs with ~30–150 s each.
+export RIGNET_PATH=$HOME/RigNet
+export XDG_RUNTIME_DIR=/tmp/xdg && mkdir -p /tmp/xdg
+export LIBGL_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri
+export LIBGL_ALWAYS_SOFTWARE=1
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6  # if conda libstdc++ is older than system
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=src xvfb-run -a \
+    python tools/nips_push/exp_rignet_downstream.py
+
+PYTHONPATH=src python tools/nips_push/analyze_rignet.py
+```
+
+Each `predict_rig()` call is wrapped in a $150\,$s `signal.alarm` timeout to prevent pathological meshes (long volumetric-geodesic loops) from stalling the whole run. The script supports `--resume` (default True) and skips pairs already in `all_results.json`.
+
+**Expected numbers (symmetry-prompt core, $n=76$ mutually-valid pairs).**
+
+| Metric | Baseline | DGR | Δ% | $p_t$ | $d$ | Win |
+|---|---|---|---|---|---|---|
+| JSE $\downarrow$ | $0.0459$ | $0.0306$ | $-33.3$% | $1.14{\times}10^{-2}$ | $-0.30$ | $68$% |
+| Angular deviation (deg) $\downarrow$ | $24.41$ | $23.90$ | $-2.1$% | $1.67{\times}10^{-1}$ | $-0.16$ | $46$% |
+| Root-joint plane offset $\downarrow$ | $0.0458$ | $0.0367$ | $-19.8$% | $1.44{\times}10^{-1}$ | $-0.17$ | $70$% |
+| Coverage rate $\uparrow$ | $95.0$% | $96.2$% | $+1.2$ pp | McNemar $1.00$ | — | — |
+
+**Per-category breakdown (n=76).**
+
+| Category | $n$ | Δ JSE | Δ Angular | Δ Root offset |
+|---|---|---|---|---|
+| Object     | $54$ | $-31.7$% | $-2.7$% | $-26.6$% |
+| Structure  | $12$ | $-73.4$% | $+0.2$% | $+12.1$% |
+| Animal     | $6$  | $-23.5$% | $-1.0$% | $-16.7$% |
+| Humanoid   | $4$  | $+37.3$% | $-0.1$% | $+58.2$% |
+
+The aggregate JSE improvement is concentrated in object and structure (together $87\%$ of the sample); the humanoid subset $(n{=}4)$ is underpowered. Coverage is preserved — DGR refinement does not break the RigNet pipeline.
+
+**Outputs.**
+- `analysis_results/nips_push_rignet/all_results.json` (per-pair joints, parents, JSE/angular/root-offset/coverage, runtime)
+- `analysis_results/nips_push_rignet/errors.json` (sample-accounting log: `load_fail`, `mesh_too_small_baseline`, RigNet timeouts)
+- `analysis_results/nips_push_rignet/summary.json` (paired $t$-test, Wilcoxon, Cohen's $d$, per-category stratification)
+- `analysis_results/nips_push_rignet/per_metric_table.tex` (inline LaTeX for Appendix Table)
+
+---
+
 ### Controlled plane-perturbation causal experiment  (Appendix sec:causal_plane, perturbation subsection)
 
 **Claim.** The 4-estimator test above compares planes that differ in more than angular error (coordinate-axis bias, PCA structure dependence, discrete vs.\ continuous search). This experiment isolates angular error by rotating each mesh's multi-start plane $\mathbf{n}^\star$ by known angles $\theta \in \{0, 5, 10, 20, 45, 90\}^\circ$ around random perpendicular axes (Rodrigues' formula, offset $d^\star$ kept). Everything except the angle is held constant within each mesh. On $n{=}65$ valid meshes and $n_\text{obs}{=}715$ observations:

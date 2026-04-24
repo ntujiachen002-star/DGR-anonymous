@@ -53,6 +53,8 @@ tools/                 Experiment scripts (one per paper subsection)
     exp_trellis_v2.py               TRELLIS-text-large backbone benchmark (180 runs)
     exp_voxel_symmetry_downstream.py Volumetric V-IoU downstream test (third non-circular signal)
     analyze_voxel_symmetry.py       Paired t-test / Wilcoxon + LaTeX for V-IoU
+    exp_rignet_downstream.py        Application-level downstream: run pretrained RigNet on baseline vs DGR meshes, compute skeleton-level metrics (JSE / angular / root offset / coverage)
+    analyze_rignet.py               Paired stats + per-category breakdown + LaTeX for RigNet
   ... (~100 more diagnostic scripts)
 
 requirements.txt       Minimal dependencies (torch, trimesh, scipy, ...)
@@ -146,6 +148,14 @@ python tools/nips_push/exp_causal_plane_perturbation.py \
 python tools/nips_push/analyze_causal_plane_perturbation.py
 python tools/nips_push/exp_adversarial_triposr.py   # adversarial stress test (~3 h)
 python tools/nips_push/exp_sota_baselines.py        # extra classical baselines (CPU, ~45 min)
+
+# (8) Application-level downstream: RigNet skeletal rigging (n=76, ~1 h on V100)
+#     Requires: https://github.com/zhan-xu/RigNet cloned at $RIGNET_PATH with
+#     its pretrained checkpoints/ folder (see upstream README). Run under
+#     xvfb-run for headless display; CPU/open3d fallbacks are documented inline.
+RIGNET_PATH=$HOME/RigNet xvfb-run -a \
+    python tools/nips_push/exp_rignet_downstream.py
+python tools/nips_push/analyze_rignet.py
 ```
 
 The `_plane_protocol.py` helper builds a per-(prompt, seed) plane cache that is shared across all methods to keep the comparison paired.
@@ -200,6 +210,7 @@ If your numbers differ by more than ±0.5 pp, check: (a) you are using `data/pla
 | **TRELLIS backbone (`exp_trellis_v2.py`)** | $180/180$ valid; $R_\mathrm{sym}$ $+85.1$% ($d=0.74$), $R_\mathrm{smooth}$ $+24.5$%, $R_\mathrm{compact}$ $+64.8$% ($d=1.74$) |
 | **Resolution-stratified (`exp_resolution_robustness.py`)** | Improvements stable across $|V|<30$ to $|V|\geq 1000$; dense subset still $+77/+23/+50$% |
 | **Volumetric V-IoU (`exp_voxel_symmetry_downstream.py`)** | $n=80$ paired symmetry prompts; V-IoU $0.456 \to 0.634$ ($+39$%, $d=+1.55$, $96$% win, $p=8.8\times 10^{-23}$) |
+| **RigNet skeletal rigging (`exp_rignet_downstream.py`)** | $n=76$ mutually-valid pairs; JSE $0.046 \to 0.031$ ($-33$%, paired $t$ $p{=}0.011$, $d{=}-0.30$, $68$% win); root-joint plane offset $-20$% ($70$% win); coverage preserved at $96.2$% vs $95.0$% (McNemar $p{=}1.0$). First application-level (not just geometric-proxy) downstream signal. |
 
 ## Data
 
