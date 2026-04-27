@@ -157,7 +157,7 @@ def load_instantmesh():
     from diffusers import DiffusionPipeline, EulerAncestralDiscreteScheduler
 
     print("Loading InstantMesh multiview diffusion...")
-    # Use local pipeline file to avoid GitHub download in China
+    # Use local pipeline file to avoid relying on remote GitHub fetch at runtime
     local_pipeline = os.path.join(INSTANTMESH_PATH, "zero123plus")
     mv_pipeline = DiffusionPipeline.from_pretrained(
         "sudo-ai/zero123plus-v1.2",
