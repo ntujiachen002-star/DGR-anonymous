@@ -353,30 +353,6 @@ CUDA_VISIBLE_DEVICES=0 TRIPOSR_PATH=$HOME/TripoSR \
 
 ---
 
-### Additional classical-geometry baselines  (Appendix sec:classical_pareto, Table tab:classical_extra)
-
-**Claim.** Three further classical denoisers beyond Laplacian/Taubin/Humphrey (HC Laplacian bilateral-analog, surface-preserving Laplacian ARAP-analog, two-step normal denoising) all fail to match DGR on any axis. Reinforces the Pareto-separation finding.
-
-**Prerequisites.** `pip install pymeshlab`.
-
-```bash
-# ~45 min on CPU for 236 meshes x 3 methods.
-PYTHONPATH=src python tools/nips_push/exp_sota_baselines.py
-```
-
-**Outputs.** `analysis_results/nips_push_sota_baselines/{all_results,summary}.json`.
-
-**Expected numbers (n=236 meshes).**
-
-| Method | Sym % | HNC % | Com % |
-|---|---|---|---|
-| HC Laplacian (bilateral-like) | $+41.3$ | $-8.1$ | $-11.9$ |
-| Surface-preserving Laplacian (ARAP-analog) | $-3.8$ | $-0.2$ | $-1.7$ |
-| Two-step normal denoising | $-106.9$ | $-16.2$ | $-341.4$ |
-| **\method{} (Equal Wt.)** | $\mathbf{+85.8}$ | $\mathbf{+19.7}$ | $\mathbf{+49.4}$ |
-
----
-
 ### Volumetric symmetry-IoU downstream validation  (Appendix sec:voxel_symmetry_appendix)
 
 **Claim.** A third non-circular downstream test beyond PSR round-trip and PCA axis stability: volumetric bilateral overlap of the filled voxel occupancy against its own reflection across the bilateral plane.
