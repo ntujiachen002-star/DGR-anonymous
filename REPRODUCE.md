@@ -16,7 +16,7 @@ Everything below assumes a single NVIDIA V100 32 GB GPU. Numbers above 90% of wh
 
 ## Main-body results
 
-### Table 1 — Overall comparison  (Sec. 4.1)
+### Table 1 — Overall comparison  (Sec. 4.3)
 
 **Claim.** Baseline, DGR (Equal Wt.), DGR (Two-reward), DGR (PCGrad), prompt-level means over $n=97$ prompts × 3 seeds.
 
@@ -55,7 +55,7 @@ Expected first line (Equal Wt., field key is `diffgeoreward`): `sym=+85.8%  hnc=
 
 ---
 
-### Independent metrics  (Sec. 4.1)
+### Independent metrics  (Sec. 4.3)
 
 **Claim.** Edge regularity $+6.2\%$, angular normal deviation $-20.0\%$, volume change $<3\%$, CLIP shift $-0.003$, ImageReward $-0.06$.
 
@@ -70,7 +70,7 @@ Output: `analysis_results/clip_allmethod/clip_scores.json`.
 
 ---
 
-### PSR self-consistency  (Sec. 4.1, Appendix sec:psr_appendix)
+### PSR self-consistency  (Sec. 4.3, Appendix sec:psr_appendix)
 
 **Claim.** $+26.8\%$ improvement, Wilcoxon $p = 4.7 \times 10^{-8}$, $n = 129$ paired meshes (after filtering).
 
@@ -86,7 +86,7 @@ python tools/exp_psr_selfconsistency.py
 
 ---
 
-### PCA axis stability  (Sec. 4.1, Appendix sec:pca_appendix)
+### PCA axis stability  (Sec. 4.3, Appendix sec:pca_appendix)
 
 **Claim.** $+17.5\%$ more stable angular deviation on the symmetry-prompt subset, $p_{\text{BH}} = 0.029$, $n = 95$.
 
@@ -100,7 +100,7 @@ python tools/exp_pca_stability.py
 
 ---
 
-### Cross-backbone generalization  (Sec. 4.5, Appendix sec:backbone_appendix)
+### Cross-backbone generalization  (Sec. 4.6, Appendix sec:backbone_appendix)
 
 **Claim.** Symmetry $+91\%$ Shap-E / $+86\%$ TripoSR / $-1\%$ InstantMesh (not significant, $p{=}0.79$).
 
@@ -127,7 +127,7 @@ python tools/exp_instantmesh_backbone.py  # InstantMesh row
 
 ---
 
-### Lang2Comp  (Sec. 4.5, appendix sec:lang2comp_arch)
+### Lang2Comp  (Sec. 3.2, Appendix sec:lang2comp_arch)
 
 **Claim.** Targeted diagonal: within each category, Lang2Comp's per-prompt weights give $+98.1\%$ sym / $+24.8\%$ HNC / $+60.8\%$ com. OOD accuracy 85.6% on 90 held-out prompts.
 
@@ -150,7 +150,7 @@ python tools/exp_lang2comp_generalization.py   # uses checkpoints/lang2comp_best
 
 ## Appendix results
 
-### Classical baselines at matched runtime  (Appendix sec:classical_sweep)
+### Classical baselines at matched runtime  (Sec. 4.5, Table 1)
 
 ```bash
 python tools/exp_classical_baselines_matched.py
@@ -160,7 +160,7 @@ python tools/exp_classical_baselines_matched.py
 
 **Output.** `analysis_results/classical_baselines_matched/results.json`.
 
-**Expected.** Laplacian 10-iter at matched shape-CD regresses HNC on 7 of 16 prompts; DGR is the only method improving all three reward axes. Concrete rows in the JSON map to Table 1 in the classical-sweep appendix section.
+**Expected.** Laplacian 10-iter at matched shape-CD regresses HNC on 7 of 16 prompts; DGR is the only method improving all three reward axes. Concrete rows in the JSON map to Table 1 in Sec. 4.5 of the paper.
 
 ---
 
@@ -231,7 +231,7 @@ python tools/exp_anticollapse.py
 
 **Runtime.** ~90 min (sweep over penalty strengths).
 
-**Expected.** Pareto-inferior at every strength when using the multi-start plane; matches the narrative in Sec. 4.2.
+**Expected.** Pareto-inferior at every strength when using the multi-start plane; matches the narrative in Sec. 4.5 (Role of the symmetry plane).
 
 ---
 
@@ -353,7 +353,7 @@ CUDA_VISIBLE_DEVICES=0 TRIPOSR_PATH=$HOME/TripoSR \
 
 ---
 
-### Additional classical-geometry baselines  (Appendix sec:classical_sweep, SOTA table)
+### Additional classical-geometry baselines  (Appendix sec:classical_pareto, Table tab:classical_extra)
 
 **Claim.** Three further classical denoisers beyond Laplacian/Taubin/Humphrey (HC Laplacian bilateral-analog, surface-preserving Laplacian ARAP-analog, two-step normal denoising) all fail to match DGR on any axis. Reinforces the Pareto-separation finding.
 
